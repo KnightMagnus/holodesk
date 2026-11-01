@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install
+        run: npm install
+
+      - name: Unit tests
+        run: npm test
+
+      - name: End-to-end tests (source)
+        run: npm run test:e2e
+
+      - name: Build installer
+        run: npm run build
+
+      - name: Install silently and smoke-test the installed app
+        shell: pwsh
+        run: |
+          $dir = "$env:RUNNER_TEMP\HOLODESK"
+          $setup = (Get-ChildItem dist\HOLODESK-Setup-*.exe).FullName
+          Start-Process -Wait -FilePath $setup -ArgumentList "/S", "/D=$dir"
+          if (-not (Test-Path "$dir\HOLODESK.exe")) { throw "install failed" }
+          $env:HOLODESK_EXE = "$dir\HOLODESK.exe"
+          node --test test/e2e/packaged.test.js
+          Start-Process -Wait -FilePath "$dir\Uninstall.exe" -ArgumentList "/S"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HOLODESK-Setup
+          path: dist/HOLODESK-Setup-*.exe
+          if-no-files-found: error
