@@ -1,26 +1,29 @@
 {
-  "name": "ehren-hud",
+  "name": "holodesk",
+  "productName": "HOLODESK",
   "version": "1.0.0",
-  "description": "EHREN - holographic desktop HUD with AI uplink (Claude / ChatGPT) and voice",
-  "main": "main.js",
+  "description": "Holographic desktop HUD for Windows: live PC telemetry, weather, YouTube, and a voice assistant backed by Claude or ChatGPT",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "src/main/index.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win portable"
+    "preview": "node scripts/preview.mjs",
+    "test": "node --test \"test/unit/*.test.js\"",
+    "test:e2e": "node --test --test-concurrency=1 \"test/e2e/*.test.js\"",
+    "check": "node scripts/check.mjs",
+    "build:win": "node scripts/build.mjs --target win",
+    "build:linux": "node scripts/build.mjs --target linux"
   },
-  "author": "EHREN",
-  "license": "MIT",
   "dependencies": {
-    "systeminformation": "^5.23.0"
+    "systeminformation": "5.27.11"
   },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.1.0"
-  },
-  "build": {
-    "appId": "com.ehren.hud",
-    "productName": "EHREN",
-    "files": ["main.js", "preload.js", "renderer/**/*", "speech/**/*", "package.json"],
-    "extraResources": [{ "from": "speech", "to": "speech" }],
-    "win": { "target": "portable" }
+    "electron": "44.10.1",
+    "playwright": "1.63.0"
   }
 }
