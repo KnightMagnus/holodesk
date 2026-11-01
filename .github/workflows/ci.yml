@@ -25,6 +25,14 @@ jobs:
       - name: End-to-end tests (source)
         run: npm run test:e2e
 
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue) -and
+              -not (Test-Path "${env:ProgramFiles(x86)}\NSIS\makensis.exe")) {
+            choco install nsis -y --no-progress
+          }
+
       - name: Build installer
         run: npm run build
 

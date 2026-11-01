@@ -6,7 +6,8 @@
 // flip security fuses -> (win) NSIS installer.
 //
 // Needs: the Electron zip (downloaded from GitHub on first run, cached in .cache/),
-// `tar` (built into Windows 10+) and NSIS `makensis` on PATH or in $MAKENSIS.
+// `tar` (built into Windows 10+) and NSIS `makensis` in $MAKENSIS, on PATH or in
+// the default NSIS install folder.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -110,8 +111,19 @@ function brandWindowsExe(exe) {
   if (!res.some((e) => e.type === RT.GROUP_ICON)) throw new Error('Icon group missing');
 }
 
+// Chocolatey and the NSIS installer put makensis here without touching PATH.
+function findMakensis() {
+  if (process.env.MAKENSIS) return process.env.MAKENSIS;
+  const dirs = [process.env['ProgramFiles(x86)'], process.env.ProgramFiles].filter(Boolean);
+  for (const dir of dirs) {
+    const exe = path.join(dir, 'NSIS', 'makensis.exe');
+    if (fs.existsSync(exe)) return exe;
+  }
+  return 'makensis';
+}
+
 function makeInstaller() {
-  const makensis = process.env.MAKENSIS || 'makensis';
+  const makensis = findMakensis();
   const out = path.join(DIST, `HOLODESK-Setup-${pkg.version}.exe`);
   const define = (k, v) => `-D${k}=${v}`;
   execFileSync(makensis, [

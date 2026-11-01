@@ -9,7 +9,7 @@ npm install
 npm start           # run from source
 npm test            # unit tests (node:test), fast, no Electron
 npm run test:e2e    # Playwright drives the real app; ~1 min
-npm run build       # dist/HOLODESK-Setup-<version>.exe; needs NSIS makensis (or $MAKENSIS)
+npm run build       # dist/HOLODESK-Setup-<version>.exe; needs NSIS makensis (PATH, default install dir or $MAKENSIS)
 ```
 
 Run `npm test` after any change. Run `npm run test:e2e` after changes to IPC, the window, settings or the renderer. CI (`.github/workflows/ci.yml`, windows-latest) runs both suites, builds the installer, installs it silently, and smoke-tests the installed exe.
