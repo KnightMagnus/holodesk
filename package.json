@@ -1,0 +1,26 @@
+{
+  "name": "ehren-hud",
+  "version": "1.0.0",
+  "description": "EHREN - holographic desktop HUD with AI uplink (Claude / ChatGPT) and voice",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "author": "EHREN",
+  "license": "MIT",
+  "dependencies": {
+    "systeminformation": "^5.23.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0"
+  },
+  "build": {
+    "appId": "com.ehren.hud",
+    "productName": "EHREN",
+    "files": ["main.js", "preload.js", "renderer/**/*", "speech/**/*", "package.json"],
+    "extraResources": [{ "from": "speech", "to": "speech" }],
+    "win": { "target": "portable" }
+  }
+}
