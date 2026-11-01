@@ -1,0 +1,57 @@
+/* Design tokens, fonts, base elements.
+   --h  theme hue, --g glow 0..1. Both are driven by js/ui/theme.js and change only
+   in small quantised steps so the page is not restyled every frame. */
+
+@font-face { font-family: 'Orbitron'; src: url('../fonts/Orbitron.ttf') format('truetype'); font-weight: 400 900; font-display: block; }
+@font-face { font-family: 'Rajdhani'; src: url('../fonts/Rajdhani-Regular.ttf') format('truetype'); font-weight: 400; font-display: block; }
+@font-face { font-family: 'Rajdhani'; src: url('../fonts/Rajdhani-Medium.ttf') format('truetype'); font-weight: 500; font-display: block; }
+@font-face { font-family: 'Rajdhani'; src: url('../fonts/Rajdhani-SemiBold.ttf') format('truetype'); font-weight: 600; font-display: block; }
+@font-face { font-family: 'Rajdhani'; src: url('../fonts/Rajdhani-Bold.ttf') format('truetype'); font-weight: 700; font-display: block; }
+@font-face { font-family: 'Share Tech Mono'; src: url('../fonts/ShareTechMono-Regular.ttf') format('truetype'); font-display: block; }
+
+:root {
+  --h: 198;
+  --g: 0.3;
+  --c: hsl(var(--h) 100% 62%);
+  --c-hi: hsl(var(--h) 100% 78%);
+  --c-dim: hsl(var(--h) 100% 62% / .45);
+  --c-faint: hsl(var(--h) 100% 62% / .14);
+  --c-ghost: hsl(var(--h) 100% 62% / .06);
+  --warn: hsl(38 100% 60%);
+  --hot: hsl(352 100% 64%);
+  --txt: hsl(var(--h) 60% 88%);
+  --txt-dim: hsl(var(--h) 50% 78% / .55);
+  --bg: #01060d;
+  --panel: hsl(calc(var(--h) + 8) 90% 7% / .62);
+  --glow: 0 0 calc(6px + 16px * var(--g)) hsl(var(--h) 100% 60% / calc(.25 + .5 * var(--g)));
+  --f-disp: 'Orbitron', 'Bahnschrift', sans-serif;
+  --f-ui: 'Rajdhani', 'Bahnschrift SemiCondensed', sans-serif;
+  --f-mono: 'Share Tech Mono', 'Consolas', monospace;
+  --cut: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--txt); font-family: var(--f-ui); user-select: none; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--c-hi); outline-offset: 2px; }
+[hidden] { display: none !important; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--c-dim); }
+::-webkit-scrollbar-track { background: transparent; }
+
+.btn { padding: 0 24px; border: 1px solid var(--c); background: linear-gradient(180deg, var(--c-faint), var(--c-ghost)); color: var(--c-hi);
+  font-family: var(--f-disp); font-weight: 700; font-size: 15px; letter-spacing: 4px; clip-path: var(--cut); transition: background .15s, color .15s; }
+.btn:hover { background: var(--c); color: #001018; }
+.btn:disabled { opacity: .4; pointer-events: none; }
+.link-btn { background: none; border: 0; font-family: var(--f-mono); font-size: 13px; letter-spacing: 3px; color: var(--c); }
+.link-btn:hover { color: var(--c-hi); text-decoration: underline; }
+.link-btn.danger { color: var(--hot); }
+.warn { color: var(--warn) !important; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 50% { box-shadow: 0 0 28px var(--c); } }
+
+/* Low quality: drop continuous decoration and filters. */
+body[data-quality="low"] .spin-layer, body[data-quality="low"] .logo { animation: none; }
+body[data-quality="low"] .gauge .val, body[data-quality="low"] .logo { filter: none; }

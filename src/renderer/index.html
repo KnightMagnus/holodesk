@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://i.ytimg.com; frame-src https://www.youtube-nocookie.com; media-src 'self' blob: data:; connect-src 'self'; object-src 'none'; base-uri 'none'">
+<title>HOLODESK</title>
+<link rel="stylesheet" href="styles/theme.css">
+<link rel="stylesheet" href="styles/layout.css">
+<link rel="stylesheet" href="styles/panels.css">
+<link rel="stylesheet" href="styles/core.css">
+<link rel="stylesheet" href="styles/media.css">
+<link rel="stylesheet" href="styles/overlay.css">
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
+
+<div id="stage">
+  <header id="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28"/><circle cx="32" cy="32" r="18"/><path d="M32 4v10M32 50v10M4 32h10M50 32h10"/><circle class="logo-core" cx="32" cy="32" r="7"/></svg>
+      <div><div class="brand-name">HOLODESK</div><div class="brand-sub">HOLOGRAPHIC INTERFACE</div></div>
+    </div>
+    <div class="top-stats">
+      <div><span class="k">HOST</span><span data-bind="host">—</span></div>
+      <div><span class="k">UPTIME</span><span data-bind="uptime">—</span></div>
+      <div><span class="k">PROCESSES</span><span data-bind="procCount">—</span></div>
+      <div><span class="k">UPLINK</span><span data-bind="uplink" class="warn">OFFLINE</span></div>
+    </div>
+    <div class="clock"><div id="time">--:--:--</div><div id="date">—</div></div>
+    <div class="win-buttons">
+      <button data-action="settings" title="Uplink and settings (Ctrl+,)" aria-label="Settings">⚙</button>
+      <button data-action="minimize" title="Minimize" aria-label="Minimize">—</button>
+      <button data-action="fullscreen" title="Toggle fullscreen (F11)" aria-label="Toggle fullscreen">▢</button>
+      <button data-action="quit" class="quit" title="Quit (Ctrl+Q)" aria-label="Quit">✕</button>
+    </div>
+  </header>
+
+  <main id="grid">
+    <section class="col">
+      <article class="panel" id="p-cpu">
+        <h2 class="ph"><span class="tag">01</span>PROCESSOR<span class="ph-r" data-bind="cpuSocket"></span></h2>
+        <div class="hw-name" data-bind="cpuName">—</div>
+        <div class="gauge-row">
+          <div class="gauge big" id="g-cpu"></div>
+          <dl class="kv-list">
+            <div><dt>TEMP</dt><dd data-bind="cpuTemp">—</dd></div>
+            <div><dt>CLOCK</dt><dd data-bind="cpuClock">—</dd></div>
+            <div><dt>CORES / THREADS</dt><dd data-bind="cpuCores">—</dd></div>
+            <div><dt>BASE / BOOST</dt><dd data-bind="cpuBase">—</dd></div>
+            <div><dt>L2 / L3 CACHE</dt><dd data-bind="cpuCache">—</dd></div>
+          </dl>
+        </div>
+        <div class="sublabel">THREAD LOAD</div>
+        <div class="threads" id="threads"></div>
+        <div class="sublabel">LOAD HISTORY · 60s</div>
+        <canvas class="spark" id="cpu-spark" width="640" height="80"></canvas>
+      </article>
+
+      <article class="panel" id="p-gpu">
+        <h2 class="ph"><span class="tag">02</span>GRAPHICS<span class="ph-r" data-bind="gpuVendor"></span></h2>
+        <div class="hw-name" data-bind="gpuName">—</div>
+        <div class="gauge-row">
+          <div class="gauge mid" id="g-gpu"></div>
+          <dl class="kv-list">
+            <div><dt>TEMP</dt><dd data-bind="gpuTemp">—</dd></div>
+            <div><dt>CORE CLOCK</dt><dd data-bind="gpuClock">—</dd></div>
+            <div><dt>FAN / POWER</dt><dd data-bind="gpuFan">—</dd></div>
+            <div><dt>DRIVER</dt><dd data-bind="gpuDriver">—</dd></div>
+          </dl>
+        </div>
+        <div class="meter-row"><span>VRAM</span><div class="meter"><i id="vram-bar"></i></div><b data-bind="gpuVram">—</b></div>
+        <div class="sublabel">DISPLAYS</div>
+        <div class="list" id="displays"></div>
+      </article>
+
+      <article class="panel grow" id="p-procs">
+        <h2 class="ph"><span class="tag">03</span>ACTIVE PROCESSES<span class="ph-r">TOP CPU</span></h2>
+        <div class="procs" id="procs"></div>
+      </article>
+    </section>
+
+    <section class="col">
+      <article class="panel" id="p-mem">
+        <h2 class="ph"><span class="tag">04</span>MEMORY<span class="ph-r" data-bind="memType"></span></h2>
+        <div class="gauge-row">
+          <div class="gauge mid" id="g-mem"></div>
+          <dl class="kv-list">
+            <div><dt>IN USE</dt><dd data-bind="memUsed">—</dd></div>
+            <div><dt>INSTALLED</dt><dd data-bind="memTotal">—</dd></div>
+            <div><dt>PAGEFILE</dt><dd data-bind="memSwap">—</dd></div>
+          </dl>
+        </div>
+        <div class="dimms" id="dimms"></div>
+      </article>
+
+      <article class="panel" id="p-disk">
+        <h2 class="ph"><span class="tag">05</span>STORAGE</h2>
+        <div class="list" id="disks"></div>
+        <div id="volumes"></div>
+      </article>
+
+      <article class="panel" id="p-net">
+        <h2 class="ph"><span class="tag">06</span>NETWORK<span class="ph-r" data-bind="netIface"></span></h2>
+        <div class="net-nums">
+          <div><span class="k">▼ DOWN</span><b data-bind="netRx">—</b></div>
+          <div><span class="k">▲ UP</span><b data-bind="netTx">—</b></div>
+          <div><span class="k">LOCAL IP</span><b data-bind="netIp">—</b></div>
+        </div>
+        <canvas class="spark" id="net-spark" width="580" height="90"></canvas>
+      </article>
+
+      <article class="panel grow" id="p-board">
+        <h2 class="ph"><span class="tag">07</span>SYSTEM CORE</h2>
+        <dl class="kv-list" id="board"></dl>
+      </article>
+    </section>
+
+    <section class="col">
+      <div id="core" role="button" tabindex="0" aria-label="Talk to HOLODESK">
+        <canvas class="core-layer" id="core-static" aria-hidden="true"></canvas>
+        <div class="ring" id="ring-ticks"><canvas></canvas></div>
+        <div class="ring rev" id="ring-segs"><canvas></canvas></div>
+        <div class="ring" id="ring-arcs"><canvas></canvas></div>
+        <canvas class="core-layer" id="core-gl" aria-hidden="true"></canvas>
+        <canvas class="core-layer" id="core-fx" aria-hidden="true"></canvas>
+        <div class="core-label">
+          <div id="state-text">STANDBY</div>
+          <div id="state-hint">CLICK THE CORE OR PRESS CTRL + SPACE TO SPEAK</div>
+        </div>
+        <div class="core-tag tl">HOLODESK // NEURAL CORE</div>
+        <div class="core-tag tr" data-bind="coreModel">NO UPLINK</div>
+        <div class="core-tag bl" data-bind="coreVoice">VOICE · WINDOWS</div>
+        <div class="core-tag br" data-bind="coreQuality">FX · HIGH</div>
+      </div>
+      <article class="panel grow" id="p-comms">
+        <h2 class="ph"><span class="tag">08</span>COMMS LOG<span class="ph-r"><button class="link-btn" data-action="clear-log">CLEAR</button></span></h2>
+        <div id="log" aria-live="polite"></div>
+        <form id="prompt-bar" autocomplete="off">
+          <button type="button" id="mic" title="Speak (Ctrl+Space)" aria-label="Speak"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+          <input id="prompt" placeholder="Talk to HOLODESK…  (Ctrl+L)" spellcheck="false" maxlength="8000">
+          <button type="submit" class="btn">TRANSMIT</button>
+        </form>
+      </article>
+    </section>
+
+    <section class="col">
+      <article class="panel" id="p-wx">
+        <h2 class="ph"><span class="tag">09</span>ATMOSPHERICS<span class="ph-r" data-bind="wxLoc">LOCATING…</span></h2>
+        <div class="wx-main">
+          <canvas id="wx-icon" width="150" height="150"></canvas>
+          <div>
+            <div class="wx-temp" data-bind="wxTemp">--°</div>
+            <div class="wx-cond" data-bind="wxCond">—</div>
+            <div class="wx-hl" data-bind="wxHL">—</div>
+          </div>
+          <dl class="kv-list compact">
+            <div><dt>FEELS LIKE</dt><dd data-bind="wxFeels">—</dd></div>
+            <div><dt>HUMIDITY</dt><dd data-bind="wxHum">—</dd></div>
+            <div><dt>WIND</dt><dd data-bind="wxWind">—</dd></div>
+            <div><dt>PRESSURE</dt><dd data-bind="wxPres">—</dd></div>
+            <div><dt>UV / RAIN</dt><dd data-bind="wxUv">—</dd></div>
+            <div><dt>SUN ↑ / ↓</dt><dd data-bind="wxSun">—</dd></div>
+          </dl>
+        </div>
+        <canvas class="spark" id="wx-spark" width="820" height="90"></canvas>
+        <div class="wx-days" id="wx-days"></div>
+      </article>
+
+      <article class="panel grow" id="p-media">
+        <h2 class="ph"><span class="tag">10</span>MEDIA FEED<span class="ph-r">YOUTUBE · AD-FILTERED</span></h2>
+        <form id="yt-form" autocomplete="off">
+          <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+          <input id="yt-query" placeholder="Search videos…  (Ctrl+K)" spellcheck="false" maxlength="200">
+          <button type="submit" class="btn">SCAN</button>
+        </form>
+        <div id="player"></div>
+        <div id="yt-results"></div>
+      </article>
+    </section>
+  </main>
+
+  <footer id="foot">
+    <span id="ticker">HOLODESK ONLINE</span>
+    <span>CTRL+SPACE SPEAK · ESC STOP · CTRL+K SEARCH · CTRL+, SETTINGS · F11 FULLSCREEN · CTRL+Q EXIT</span>
+  </footer>
+
+  <div id="overlay" hidden>
+    <div class="ov-panel" role="dialog" aria-modal="true" aria-labelledby="ov-title">
+      <div class="ov-head">
+        <div>
+          <div class="ov-title" id="ov-title">UPLINK</div>
+          <div class="ov-sub">Link Claude or ChatGPT with an API key. Keys are encrypted with Windows and stay on this PC.</div>
+        </div>
+        <button class="link-btn" data-action="close-overlay">CLOSE ✕</button>
+      </div>
+      <div class="providers">
+        <section class="prov" data-provider="anthropic">
+          <div class="prov-h"><span class="prov-name">CLAUDE</span><span class="prov-by">ANTHROPIC</span><span class="prov-status">NOT LINKED</span></div>
+          <input type="password" placeholder="sk-ant-…  API key" class="prov-key" autocomplete="off">
+          <div class="prov-actions">
+            <button class="btn" data-action="link">LINK</button>
+            <button class="link-btn" data-action="open" data-url="https://console.anthropic.com/settings/keys">GET A KEY ↗</button>
+            <button class="link-btn danger" data-action="unlink">UNLINK</button>
+          </div>
+          <label>MODEL<select class="prov-model"></select></label>
+        </section>
+        <section class="prov" data-provider="openai">
+          <div class="prov-h"><span class="prov-name">CHATGPT</span><span class="prov-by">OPENAI</span><span class="prov-status">NOT LINKED</span></div>
+          <input type="password" placeholder="sk-…  API key" class="prov-key" autocomplete="off">
+          <div class="prov-actions">
+            <button class="btn" data-action="link">LINK</button>
+            <button class="link-btn" data-action="open" data-url="https://platform.openai.com/api-keys">GET A KEY ↗</button>
+            <button class="link-btn danger" data-action="unlink">UNLINK</button>
+          </div>
+          <label>MODEL<select class="prov-model"></select></label>
+        </section>
+      </div>
+      <div class="ov-msg" id="ov-msg" role="status"></div>
+      <div class="settings-grid">
+        <label>ACTIVE AI<select name="provider"><option value="anthropic">Claude</option><option value="openai">ChatGPT</option></select></label>
+        <label>VOICE ENGINE<select name="voiceEngine"><option value="system">Windows (free, offline)</option><option value="openai">OpenAI (needs OpenAI key)</option></select></label>
+        <label>WINDOWS VOICE<select name="systemVoice"></select></label>
+        <label>OPENAI VOICE<select name="openaiVoice"><option>onyx</option><option>alloy</option><option>ash</option><option>coral</option><option>echo</option><option>fable</option><option>nova</option><option>sage</option><option>shimmer</option></select></label>
+        <label>SPEAK REPLIES<select name="autoSpeak"><option value="true">On</option><option value="false">Off</option></select></label>
+        <label>VISUAL QUALITY<select name="quality"><option value="high">High</option><option value="balanced">Balanced</option><option value="low">Low (laptops)</option></select></label>
+        <label>CLOCK<select name="clock24"><option value="true">24-hour</option><option value="false">12-hour</option></select></label>
+        <label>START WITH WINDOWS<select name="launchAtLogin"><option value="false">Off</option><option value="true">On</option></select></label>
+        <label>UNITS<select name="units"><option value="">Auto</option><option value="imperial">°F, mph</option><option value="metric">°C, km/h</option></select></label>
+        <label class="wide">WEATHER LOCATION<input name="city" placeholder="Blank = detect automatically (e.g. Seattle)" maxlength="120"></label>
+      </div>
+      <div class="ov-foot">
+        <button class="btn" data-action="save-settings">SAVE</button>
+        <button class="link-btn" data-action="close-overlay">CONTINUE WITHOUT AI</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
