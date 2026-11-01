@@ -123,7 +123,7 @@ function boot() {
   handle('settings:get', () => config.publicView());
   handle('settings:update', (patch) => {
     const view = config.update(patch);
-    if (patch && 'launchAtLogin' in patch && app.isPackaged) app.setLoginItemSettings({ openAtLogin: view.launchAtLogin });
+    if (patch && 'launchAtLogin' in patch && app.isPackaged) app.setLoginItemSettings({ openAtLogin: view.launchAtLogin, name: 'HOLODESK' });
     return view;
   });
   handle('settings:link', async (provider, key) => {

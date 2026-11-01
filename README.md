@@ -1,33 +1,110 @@
-# EHREN — Holographic Desktop HUD
+# HOLODESK
 
-Fullscreen sci-fi HUD for Windows, laid out natively for **3440×1440** (scales to any screen).
+A fullscreen holographic HUD for Windows. It shows live hardware telemetry and local weather, plays YouTube videos, and has a voice assistant that runs on Claude or ChatGPT.
 
-## Run it
-1. Install **Node.js LTS** from https://nodejs.org
-2. Double-click **START-EHREN.bat** (first launch installs components).
+Laid out for 3440×1440 ultrawide monitors and scaled to fit any other resolution.
 
-Want a single .exe? Run `npm run dist` — a portable `EHREN.exe` appears in `dist/`.
+![HOLODESK at 3440x1440](docs/screenshot.png)
+
+## Features
+
+**Hardware telemetry**
+- CPU: model, per-thread load, clock, temperature, cache, 60-second load history
+- GPU: load, temperature, VRAM, core clock, fan, power draw
+- Memory modules, pagefile, drives and volume usage, network throughput
+- Motherboard, BIOS, OS build, displays, and the busiest processes
+
+**Weather.** Current conditions, a 24-hour temperature and rain curve, and a 6-day forecast from [Open-Meteo](https://open-meteo.com). Location comes from your IP address, or from a city you set. No API key needed.
+
+**Media.** Search YouTube and play results in an embedded player. Known ad and tracking domains are blocked at the network level. Most ads are filtered, but YouTube can still serve some.
+
+**Assistant**
+- Talk or type to Claude (Anthropic) or ChatGPT (OpenAI) using your own API key.
+- Each request includes your PC's live stats and the weather, so you can ask "how hot is my GPU?" or "do I need a jacket tomorrow?"
+- Say "play lo-fi beats" to search and play a video.
+- The particle sphere in the center reacts to the assistant's voice, and the blue theme shifts as it listens, thinks and speaks.
+- Any playing video pauses while the microphone is open.
+
+**Voice engines**
+- **Windows:** free and offline. Uses built-in Windows speech recognition and the voices installed on your PC.
+- **OpenAI:** Whisper transcription and OpenAI voices. More accurate and natural, and the sphere follows the real waveform. Requires an OpenAI key.
+
+## Install
+
+Download `HOLODESK-Setup-<version>.exe` from the latest CI run's artifacts and run it.
+
+- No administrator rights are needed. It installs to `%LOCALAPPDATA%\Programs\HOLODESK` and adds Start menu and desktop shortcuts.
+- The installer is unsigned, so Windows SmartScreen may warn on first run. Choose **More info → Run anyway**.
+- Settings and encrypted API keys are stored in `%APPDATA%\HOLODESK`. Uninstalling asks whether to remove them.
+
+## First run
+
+The Uplink screen opens on first launch.
+
+1. Paste an API key from [console.anthropic.com](https://console.anthropic.com/settings/keys) or [platform.openai.com](https://platform.openai.com/api-keys) and press **Link**. HOLODESK checks the key, then lists the models it can use.
+2. API usage is billed by the provider. A Claude Pro or ChatGPT Plus subscription does not include API access.
+3. Keys are encrypted with Windows DPAPI and only sent to the provider they belong to.
+
+To use HOLODESK without AI, choose **Continue without AI**. The Uplink screen can be reopened at any time with the gear icon or `Ctrl+,`.
 
 ## Controls
+
 | Key | Action |
-|---|---|
-| Ctrl + Space / click the sphere | Talk to EHREN |
-| Click sphere while it speaks | Interrupt |
-| F11 | Toggle fullscreen |
-| Ctrl + Q | Quit |
-| ⚙ (top right) | Uplink & settings |
+| --- | --- |
+| `Ctrl+Space`, or click the sphere | Talk |
+| `Esc` | Stop listening, cancel a request, or stop speaking |
+| `Ctrl+L` | Focus the message box |
+| `Ctrl+K` | Focus YouTube search |
+| `Ctrl+,` | Uplink and settings |
+| `F11` | Toggle fullscreen |
+| `Ctrl+Q` | Quit |
 
-## AI uplink (login)
-On first launch, the Uplink screen opens. Paste an **API key** for Claude (console.anthropic.com) or ChatGPT (platform.openai.com) and press LINK. Keys are encrypted with Windows' secure storage and never leave your PC except to talk to that provider. API usage is billed by the provider (separate from a Claude Pro / ChatGPT Plus subscription — those can't be used by third-party apps).
+## Settings
 
-EHREN gets your live PC stats and local weather with every message, so you can ask things like "how hot is my GPU?" or "do I need an umbrella tomorrow?".
-Say or type **"play lo-fi beats"** to have it search and play a video.
+| Setting | Options |
+| --- | --- |
+| Active AI | Claude or ChatGPT, plus model per provider |
+| Voice engine | Windows (offline) or OpenAI |
+| Speak replies | On / Off |
+| Visual quality | High, Balanced, Low (for laptops) |
+| Clock | 24-hour / 12-hour |
+| Start with Windows | On / Off |
+| Units | Auto, °F/mph, °C/km/h |
+| Weather location | Auto-detect or a city name |
 
-## Voice
-- **Windows voice (default):** free and offline. Uses Windows speech recognition + your installed Windows voices.
-- **OpenAI voice:** more accurate (Whisper) and natural-sounding, and the sphere reacts to the real waveform. Needs an OpenAI key linked (works even if Claude is your active brain).
+## Better sensor readings
 
-## Panels
-CPU (per-thread load, clocks, temps, cache) · GPU (load, temp, VRAM, clock, fan, power) · RAM modules · drives & volumes · network throughput · motherboard / BIOS / OS · top processes · weather (Open-Meteo, auto-located, 24h curve + 6-day) · YouTube search with embedded player.
+Windows does not expose CPU temperature to regular programs on most hardware, and AMD and Intel GPUs report little through standard APIs. HOLODESK reads extra sensors when they are available:
 
-Notes: CPU temperature on Windows often needs EHREN run as administrator. Detailed GPU stats are read from NVIDIA's driver tools; AMD/Intel GPUs show what Windows exposes. The media player uses YouTube's privacy-enhanced embed and blocks known ad/tracking domains; most ads are filtered, but YouTube can still serve some.
+- **NVIDIA GPUs:** read automatically through `nvidia-smi`, which ships with the driver.
+- **Everything else:** run [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) and enable **Options → Remote Web Server** (port 8085). HOLODESK detects it automatically and uses it for CPU temperature and AMD/Intel GPU stats.
+
+## Resource use
+
+HOLODESK is built to stay light while it runs all day:
+
+- The sphere renders on the GPU with WebGL. A Canvas 2D fallback is used if WebGL is unavailable.
+- Decorative rings are drawn once and rotated by the compositor.
+- Each hardware metric is polled at a rate that matches how fast it changes, through one shared PowerShell session instead of a new process per query.
+- Telemetry stops while the window is minimized or hidden, or the screen is locked.
+- The Windows speech recognizer and audio devices are released when idle.
+
+## Development
+
+Requires Node.js 22+ on Windows.
+
+```
+npm install
+npm start          # run from source
+npm test           # unit tests
+npm run test:e2e   # end-to-end tests against the real app
+npm run build      # dist/HOLODESK-Setup-<version>.exe (needs NSIS: winget install NSIS.NSIS)
+```
+
+CI runs on every push. It runs both test suites, builds the installer, installs it silently, smoke-tests the installed app, and uploads the installer as an artifact.
+
+See [CLAUDE.md](CLAUDE.md) for the architecture and conventions.
+
+## License
+
+MIT. Fonts (Orbitron, Rajdhani, Share Tech Mono) are under the SIL Open Font License; see `src/renderer/fonts/OFL.txt`.
