@@ -12,12 +12,9 @@
   },
   "scripts": {
     "start": "electron .",
-    "preview": "node scripts/preview.mjs",
     "test": "node --test \"test/unit/*.test.js\"",
     "test:e2e": "node --test --test-concurrency=1 \"test/e2e/*.test.js\"",
-    "check": "node scripts/check.mjs",
-    "build:win": "node scripts/build.mjs --target win",
-    "build:linux": "node scripts/build.mjs --target linux"
+    "build": "node scripts/build.mjs"
   },
   "dependencies": {
     "systeminformation": "5.27.11"
