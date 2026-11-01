@@ -1,0 +1,46 @@
+{
+  "id": 0, "Text": "Sensor", "Min": "Min", "Value": "Value", "Max": "Max", "ImageURL": "",
+  "Children": [{
+    "id": 1, "Text": "GAMING-PC", "Min": "", "Value": "", "Max": "", "ImageURL": "images_icon/computer.png",
+    "Children": [
+      {
+        "id": 2, "Text": "AMD Ryzen 9 7950X3D", "HardwareId": "/amdcpu/0", "ImageURL": "images_icon/cpu.png", "Min": "", "Value": "", "Max": "",
+        "Children": [
+          { "id": 3, "Text": "Temperatures", "ImageURL": "images_icon/temperature.png", "Min": "", "Value": "", "Max": "", "Children": [
+            { "id": 4, "Text": "Core (Tctl/Tdie)", "SensorId": "/amdcpu/0/temperature/2", "Type": "Temperature", "Min": "40.1 °C", "Value": "61.5 °C", "Max": "80.0 °C", "RawValue": 61.5, "Children": [] },
+            { "id": 5, "Text": "CCD1 (Tdie)", "SensorId": "/amdcpu/0/temperature/3", "Type": "Temperature", "Value": "55.0 °C", "RawValue": 55.0, "Children": [] }
+          ] },
+          { "id": 6, "Text": "Load", "Min": "", "Value": "", "Max": "", "Children": [
+            { "id": 7, "Text": "CPU Total", "SensorId": "/amdcpu/0/load/0", "Type": "Load", "Value": "23.0 %", "RawValue": 23.0, "Children": [] }
+          ] }
+        ]
+      },
+      {
+        "id": 10, "Text": "AMD Radeon RX 7900 XT", "HardwareId": "/gpu-amd/0", "ImageURL": "images_icon/ati.png", "Min": "", "Value": "", "Max": "",
+        "Children": [
+          { "id": 11, "Text": "Temperatures", "Min": "", "Value": "", "Max": "", "Children": [
+            { "id": 12, "Text": "GPU Core", "SensorId": "/gpu-amd/0/temperature/0", "Type": "Temperature", "Value": "63.0 °C", "RawValue": 63.0, "Children": [] },
+            { "id": 13, "Text": "GPU Hot Spot", "SensorId": "/gpu-amd/0/temperature/2", "Type": "Temperature", "Value": "78.0 °C", "RawValue": 78.0, "Children": [] }
+          ] },
+          { "id": 14, "Text": "Load", "Min": "", "Value": "", "Max": "", "Children": [
+            { "id": 15, "Text": "GPU Core", "SensorId": "/gpu-amd/0/load/0", "Type": "Load", "Value": "44.0 %", "RawValue": 44.0, "Children": [] },
+            { "id": 16, "Text": "GPU Memory", "SensorId": "/gpu-amd/0/load/1", "Type": "Load", "Value": "43.0 %", "RawValue": 43.0, "Children": [] }
+          ] },
+          { "id": 17, "Text": "Clocks", "Min": "", "Value": "", "Max": "", "Children": [
+            { "id": 18, "Text": "GPU Core", "SensorId": "/gpu-amd/0/clock/0", "Type": "Clock", "Value": "2450.0 MHz", "RawValue": 2450.0, "Children": [] }
+          ] },
+          { "id": 19, "Text": "Controls", "Min": "", "Value": "", "Max": "", "Children": [
+            { "id": 20, "Text": "GPU Fan", "SensorId": "/gpu-amd/0/control/0", "Type": "Control", "Value": "38.0 %", "RawValue": 38.0, "Children": [] }
+          ] },
+          { "id": 21, "Text": "Powers", "Min": "", "Value": "", "Max": "", "Children": [
+            { "id": 22, "Text": "GPU Package", "SensorId": "/gpu-amd/0/power/0", "Type": "Power", "Value": "210.4 W", "RawValue": 210.4, "Children": [] }
+          ] },
+          { "id": 23, "Text": "Data", "Min": "", "Value": "", "Max": "", "Children": [
+            { "id": 24, "Text": "GPU Memory Used", "SensorId": "/gpu-amd/0/smalldata/0", "Type": "SmallData", "Value": "7012.0 MB", "RawValue": 7012.0, "Children": [] },
+            { "id": 25, "Text": "GPU Memory Total", "SensorId": "/gpu-amd/0/smalldata/1", "Type": "SmallData", "Value": "16368.0 MB", "RawValue": 16368.0, "Children": [] }
+          ] }
+        ]
+      }
+    ]
+  }]
+}
