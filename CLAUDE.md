@@ -26,7 +26,8 @@ src/main/        main process (Node, ESM)
   telemetry.js   tiered polling, persistent PowerShell, pauses when hidden
   sensors.js     nvidia-smi --loop-ms stream; LibreHardwareMonitor :8085/data.json parser
   weather.js     Open-Meteo + IP/city geolocation; memory + disk cache; stale fallback
-  ai.js          Anthropic/OpenAI clients, model filtering, chat history (lives in main)
+  ai.js          Anthropic/OpenAI/OpenAI-compatible clients, model filtering, chat history (lives in main)
+  ollama.js      one-click setup: signed OllamaSetup.exe, start, model pull with progress
   context.js     builds the live PC/weather context sent with each AI request
   voice.js       long-lived Windows speech recognizer; Whisper; OpenAI TTS
   youtube.js     keyless search by parsing ytInitialData

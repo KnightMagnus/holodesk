@@ -43,7 +43,7 @@ The Uplink screen opens on first launch.
 
 1. Paste an API key from [console.anthropic.com](https://console.anthropic.com/settings/keys) or [platform.openai.com](https://platform.openai.com/api-keys) and press **Link**. HOLODESK checks the key, then lists the models it can use.
 2. API usage is billed by the provider. A Claude Pro or ChatGPT Plus subscription does not include API access.
-3. For a free assistant that runs offline, install [Ollama](https://ollama.com/download), run `ollama pull llama3.2`, then press **Link** on the **Local** card with the Ollama preset. No key needed. To use a `.gguf` file you already have, create a file named `Modelfile` containing `FROM ./your-model.gguf` and run `ollama create mymodel -f Modelfile`.
+3. For a free assistant that runs offline, pick a model on the **Local** card and press **Set up**. HOLODESK downloads and installs [Ollama](https://ollama.com) (after checking its signature), starts it, downloads the model and links it. No key or terminal needed. If you already run Ollama, just press **Link**. To use a `.gguf` file you already have, create a file named `Modelfile` containing `FROM ./your-model.gguf` and run `ollama create mymodel -f Modelfile`.
 4. Keys are encrypted with Windows DPAPI and only sent to the provider they belong to.
 
 To use HOLODESK without AI, choose **Continue without AI**. The Uplink screen can be reopened at any time with the gear icon or `Ctrl+,`.

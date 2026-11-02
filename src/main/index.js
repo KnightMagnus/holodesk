@@ -15,7 +15,8 @@ import { search as youtubeSearch } from './youtube.js';
 import { installAdblock } from './adblock.js';
 import { buildContext } from './context.js';
 import { resolveAsset, mimeFor } from './serve.js';
-import { COMPAT_PRESETS } from '../shared/presets.js';
+import { COMPAT_PRESETS, OLLAMA_MODELS } from '../shared/presets.js';
+import { createOllamaSetup } from './ollama.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.resolve(HERE, '..');
@@ -147,6 +148,21 @@ function boot() {
   });
   handle('settings:models', (provider) => providers[check.oneOf(provider, 'provider', PROVIDERS)].listModels(requireKey(provider)));
 
+  const ollama = createOllamaSetup();
+  handle('ollama:status', () => ollama.status());
+  handle('ollama:setup', async (model) => {
+    check.oneOf(model, 'model', OLLAMA_MODELS.map((m) => m.id));
+    await ollama.setup(model, (phase, text, pct) => {
+      if (win && !win.isDestroyed()) win.webContents.send('ollama:progress', { phase, text, pct });
+    });
+    const url = COMPAT_PRESETS.ollama.url;
+    const models = await providers.compat.listModels(compatSecret(url));
+    const id = models.find((m) => m.id === model || m.id === `${model}:latest`)?.id || model;
+    config.setKey('compat', compatSecret(url), id, { preset: 'ollama' });
+    return { settings: config.publicView(), models };
+  });
+  handle('ollama:cancel', () => ollama.cancel());
+
   handle('ai:send', (text) => chat.send(check.str(text, 'message', 8000)));
   handle('ai:cancel', () => chat.cancel());
   handle('ai:reset', () => chat.reset());
@@ -195,6 +211,7 @@ function boot() {
     telemetry.stop();
     recognizer.dispose();
     chat.cancel();
+    ollama.cancel();
   });
 }
 
