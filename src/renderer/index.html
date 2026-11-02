@@ -191,7 +191,7 @@
       <div class="ov-head">
         <div>
           <div class="ov-title" id="ov-title">UPLINK</div>
-          <div class="ov-sub">Link Claude or ChatGPT with an API key. Keys are encrypted with Windows and stay on this PC.</div>
+          <div class="ov-sub">Link Claude or ChatGPT with an API key, or run a free model on this PC with Ollama. Keys are encrypted with Windows and stay on this PC.</div>
         </div>
         <button class="link-btn" data-action="close-overlay">CLOSE ✕</button>
       </div>
@@ -216,10 +216,28 @@
           </div>
           <label>MODEL<select class="prov-model"></select></label>
         </section>
+        <section class="prov" data-provider="compat">
+          <div class="prov-h"><span class="prov-name">LOCAL</span><span class="prov-by">OPENAI-COMPATIBLE</span><span class="prov-status">NOT LINKED</span></div>
+          <label>SERVER<select class="prov-preset">
+            <option value="ollama">Ollama (free, on this PC)</option>
+            <option value="lmstudio">LM Studio (free, on this PC)</option>
+            <option value="groq">Groq (free tier, key)</option>
+            <option value="openrouter">OpenRouter (key)</option>
+            <option value="custom">Custom address</option>
+          </select></label>
+          <input type="text" class="prov-url" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false" aria-label="Server address">
+          <input type="password" class="prov-key" placeholder="API key (not needed)" autocomplete="off">
+          <div class="prov-actions">
+            <button class="btn" data-action="link">LINK</button>
+            <button class="link-btn prov-help" data-action="open" data-url="https://ollama.com/download">GET OLLAMA ↗</button>
+            <button class="link-btn danger" data-action="unlink">UNLINK</button>
+          </div>
+          <label>MODEL<select class="prov-model"></select></label>
+        </section>
       </div>
       <div class="ov-msg" id="ov-msg" role="status"></div>
       <div class="settings-grid">
-        <label>ACTIVE AI<select name="provider"><option value="anthropic">Claude</option><option value="openai">ChatGPT</option></select></label>
+        <label>ACTIVE AI<select name="provider"><option value="anthropic">Claude</option><option value="openai">ChatGPT</option><option value="compat">Local / compatible</option></select></label>
         <label>VOICE ENGINE<select name="voiceEngine"><option value="system">Windows (free, offline)</option><option value="openai">OpenAI (needs OpenAI key)</option></select></label>
         <label>WINDOWS VOICE<select name="systemVoice"></select></label>
         <label>OPENAI VOICE<select name="openaiVoice"><option>onyx</option><option>alloy</option><option>ash</option><option>coral</option><option>echo</option><option>fable</option><option>nova</option><option>sage</option><option>shimmer</option></select></label>

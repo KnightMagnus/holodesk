@@ -3,8 +3,9 @@
 // and never leave the main process.
 import fs from 'node:fs';
 import path from 'node:path';
+import { COMPAT_PRESETS } from '../shared/presets.js';
 
-export const PROVIDERS = ['anthropic', 'openai'];
+export const PROVIDERS = ['anthropic', 'openai', 'compat'];
 
 const oneOf = (...vals) => (v) => vals.includes(v);
 const isBool = (v) => typeof v === 'boolean';
@@ -13,6 +14,7 @@ const shortStr = (max) => (v) => typeof v === 'string' && v.length <= max;
 // Public settings the renderer may read and write. Anything else is rejected.
 const SCHEMA = {
   provider: { def: null, ok: (v) => v === null || PROVIDERS.includes(v) },
+  compatPreset: { def: 'ollama', ok: oneOf(...Object.keys(COMPAT_PRESETS)) },
   voiceEngine: { def: 'system', ok: oneOf('system', 'openai') },
   systemVoice: { def: '', ok: shortStr(200) },
   openaiVoice: { def: 'onyx', ok: oneOf('alloy', 'ash', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer') },
@@ -98,9 +100,15 @@ export function createConfig({ dir, cipher, file = 'settings.json' }) {
       return this.publicView();
     },
 
-    setKey(provider, key, model) {
+    setKey(provider, key, model, { preset } = {}) {
       if (!PROVIDERS.includes(provider)) throw new ConfigError('Unknown provider');
       state.keys = { ...state.keys, [provider]: cipher.encrypt(key) };
+      // a different compatible server has different models; the saved pick no longer applies
+      if (preset !== undefined) {
+        if (!SCHEMA.compatPreset.ok(preset)) throw new ConfigError('Unknown preset');
+        state.compatPreset = preset;
+        state.models = { ...state.models, [provider]: model };
+      }
       if (!state.models[provider] && model) state.models = { ...state.models, [provider]: model };
       state.provider = provider;
       save();

@@ -10,6 +10,7 @@ import { createMediaPanel } from './panels/media.js';
 import { createComms } from './panels/comms.js';
 import { createSettings } from './panels/settings.js';
 import { createAssistant } from './voice/assistant.js';
+import { COMPAT_PRESETS } from '/shared/presets.js';
 
 let settings = await api.settings.get();
 
@@ -26,10 +27,15 @@ const core = createCore($('#core'), { quality: settings.quality, getCpuLoad: () 
 const assistant = createAssistant({ api, core, comms, media, getSettings: () => settings });
 const overlay = createSettings(api, { onSaved: applySettings });
 
+function uplinkName(s) {
+  if (s.provider === 'compat') return (COMPAT_PRESETS[s.compatPreset]?.label || 'LOCAL').toUpperCase();
+  return s.provider === 'anthropic' ? 'CLAUDE' : 'CHATGPT';
+}
+
 function applySettings(next, before = settings) {
   settings = next;
   const linked = next.provider && next.linked[next.provider];
-  bind('uplink', linked ? (next.provider === 'anthropic' ? 'CLAUDE' : 'CHATGPT') : 'OFFLINE');
+  bind('uplink', linked ? uplinkName(next) : 'OFFLINE');
   $('[data-bind="uplink"]').classList.toggle('warn', !linked);
   bind('coreModel', linked ? (next.models[next.provider] || '').toUpperCase() : 'NO UPLINK');
   bind('coreVoice', `VOICE · ${next.voiceEngine === 'openai' ? 'OPENAI' : 'WINDOWS'}`);

@@ -17,7 +17,8 @@ test('starts from defaults when no file exists', () => {
   assert.equal(v.provider, null);
   assert.equal(v.voiceEngine, 'system');
   assert.equal(v.quality, 'high');
-  assert.deepEqual(v.linked, { anthropic: false, openai: false });
+  assert.deepEqual(v.linked, { anthropic: false, openai: false, compat: false });
+  assert.equal(v.compatPreset, 'ollama');
 });
 
 test('drops invalid values from a hand-edited file', () => {
@@ -83,4 +84,17 @@ test('an undecryptable key reads as not linked', () => {
   createConfig({ dir, cipher }).setKey('openai', 'sk', 'gpt');
   const broken = { ...cipher, decrypt: () => { throw new Error('DPAPI mismatch'); } };
   assert.equal(createConfig({ dir, cipher: broken }).publicView().linked.openai, false);
+});
+
+test('relinking a different compatible server replaces its preset and model', () => {
+  const dir = tmp();
+  const c = createConfig({ dir, cipher });
+  c.setKey('compat', '{"url":"http://localhost:11434/v1","key":""}', 'llama3.2', { preset: 'ollama' });
+  c.update({ models: { compat: 'qwen3:8b' } });
+  c.setKey('compat', '{"url":"http://localhost:1234/v1","key":""}', 'gemma-3', { preset: 'lmstudio' });
+  const v = createConfig({ dir, cipher }).publicView();
+  assert.equal(v.compatPreset, 'lmstudio');
+  assert.equal(v.models.compat, 'gemma-3');
+  assert.equal(v.provider, 'compat');
+  assert.throws(() => c.setKey('compat', '{}', 'x', { preset: 'nope' }), /Unknown preset/);
 });

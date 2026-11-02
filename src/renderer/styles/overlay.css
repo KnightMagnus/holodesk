@@ -7,7 +7,7 @@
 .ov-title { font-family: var(--f-disp); font-weight: 900; font-size: 34px; letter-spacing: 12px; color: var(--c-hi); text-shadow: var(--glow); }
 .ov-sub { font-size: 19px; color: var(--txt-dim); margin-top: 6px; }
 
-.providers { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.providers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: start; }
 .prov { display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--c-faint); background: var(--c-ghost); padding: 20px 22px; }
 .prov.linked { border-color: var(--c); box-shadow: inset 0 0 30px var(--c-faint); }
 .prov.active .prov-name::after { content: ' · ACTIVE'; font-size: 13px; letter-spacing: 3px; color: var(--c-hi); }

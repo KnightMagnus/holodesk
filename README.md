@@ -1,6 +1,6 @@
 # HOLODESK
 
-A fullscreen holographic HUD for Windows. It shows live hardware telemetry and local weather, plays YouTube videos, and has a voice assistant that runs on Claude or ChatGPT.
+A fullscreen holographic HUD for Windows. It shows live hardware telemetry and local weather, plays YouTube videos, and has a voice assistant that runs on Claude, ChatGPT, or a free model on your own PC through Ollama.
 
 Laid out for 3440×1440 ultrawide monitors and scaled to fit any other resolution.
 
@@ -19,7 +19,7 @@ Laid out for 3440×1440 ultrawide monitors and scaled to fit any other resolutio
 **Media.** Search YouTube and play results in an embedded player. Known ad and tracking domains are blocked at the network level. Most ads are filtered, but YouTube can still serve some.
 
 **Assistant**
-- Talk or type to Claude (Anthropic) or ChatGPT (OpenAI) using your own API key.
+- Talk or type to Claude (Anthropic) or ChatGPT (OpenAI) using your own API key, or to a free local model through Ollama or LM Studio. Any OpenAI-compatible server works, including Groq and OpenRouter.
 - Each request includes your PC's live stats and the weather, so you can ask "how hot is my GPU?" or "do I need a jacket tomorrow?"
 - Say "play lo-fi beats" to search and play a video.
 - The particle sphere in the center reacts to the assistant's voice, and the blue theme shifts as it listens, thinks and speaks.
@@ -43,7 +43,8 @@ The Uplink screen opens on first launch.
 
 1. Paste an API key from [console.anthropic.com](https://console.anthropic.com/settings/keys) or [platform.openai.com](https://platform.openai.com/api-keys) and press **Link**. HOLODESK checks the key, then lists the models it can use.
 2. API usage is billed by the provider. A Claude Pro or ChatGPT Plus subscription does not include API access.
-3. Keys are encrypted with Windows DPAPI and only sent to the provider they belong to.
+3. For a free assistant that runs offline, install [Ollama](https://ollama.com/download), run `ollama pull llama3.2`, then press **Link** on the **Local** card with the Ollama preset. No key needed. To use a `.gguf` file you already have, create a file named `Modelfile` containing `FROM ./your-model.gguf` and run `ollama create mymodel -f Modelfile`.
+4. Keys are encrypted with Windows DPAPI and only sent to the provider they belong to.
 
 To use HOLODESK without AI, choose **Continue without AI**. The Uplink screen can be reopened at any time with the gear icon or `Ctrl+,`.
 
@@ -63,7 +64,7 @@ To use HOLODESK without AI, choose **Continue without AI**. The Uplink screen ca
 
 | Setting | Options |
 | --- | --- |
-| Active AI | Claude or ChatGPT, plus model per provider |
+| Active AI | Claude, ChatGPT or Local (Ollama, LM Studio, Groq, OpenRouter, custom), plus model per provider |
 | Voice engine | Windows (offline) or OpenAI |
 | Speak replies | On / Off |
 | Visual quality | High, Balanced, Low (for laptops) |

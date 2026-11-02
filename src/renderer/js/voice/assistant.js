@@ -181,7 +181,7 @@ export function createAssistant({ api, core, comms, media, getSettings }) {
       }
     }
     if (!getSettings().provider) {
-      const reply = 'My uplink is offline. Open settings and link Claude or ChatGPT.';
+      const reply = 'My uplink is offline. Open settings and link Claude, ChatGPT or a local model.';
       comms.say('ai', reply);
       return speak(reply);
     }

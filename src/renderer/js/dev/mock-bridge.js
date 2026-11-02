@@ -44,7 +44,7 @@ function sampleSnapshot() {
 
 export function createMockBridge() {
   const settings = {
-    provider: 'anthropic', models: { anthropic: 'claude-sonnet-5-5' }, linked: { anthropic: true, openai: false },
+    provider: 'anthropic', models: { anthropic: 'claude-sonnet-5-5' }, linked: { anthropic: true, openai: false, compat: false }, compatPreset: 'ollama',
     voiceEngine: 'system', systemVoice: '', openaiVoice: 'onyx', autoSpeak: true, units: '', city: '',
     quality: 'high', clock24: true, launchAtLogin: false
   };

@@ -1,7 +1,9 @@
 // Uplink + settings overlay.
 import { $, $$, esc, setText } from '../lib/dom.js';
+import { COMPAT_PRESETS } from '/shared/presets.js';
 
-const LABEL = { anthropic: 'CLAUDE', openai: 'CHATGPT' };
+const PROVS = ['anthropic', 'openai', 'compat'];
+const LABEL = { anthropic: 'CLAUDE', openai: 'CHATGPT', compat: 'LOCAL MODEL' };
 
 export function createSettings(api, { onSaved }) {
   const overlay = $('#overlay');
@@ -44,8 +46,24 @@ export function createSettings(api, { onSaved }) {
   }
   speechSynthesis.addEventListener('voiceschanged', () => view && fillVoices());
 
+  // Fills the address, key hint and help link for a preset. Custom keeps what was typed.
+  function applyPreset(id) {
+    const c = card('compat');
+    const preset = COMPAT_PRESETS[id] || COMPAT_PRESETS.custom;
+    const url = c.querySelector('.prov-url');
+    if (id !== 'custom') url.value = preset.url;
+    url.placeholder = preset.url || 'http://host:port/v1';
+    c.querySelector('.prov-key').placeholder = preset.needsKey ? 'API key' : 'API key (not needed)';
+    const help = c.querySelector('.prov-help');
+    help.hidden = !preset.help;
+    help.dataset.url = preset.help;
+    setText(help, preset.helpText);
+  }
+
   function renderView() {
-    for (const p of ['anthropic', 'openai']) {
+    card('compat').querySelector('.prov-preset').value = view.compatPreset;
+    applyPreset(view.compatPreset);
+    for (const p of PROVS) {
       const c = card(p);
       c.classList.toggle('linked', view.linked[p]);
       c.classList.toggle('active', view.provider === p);
@@ -81,16 +99,28 @@ export function createSettings(api, { onSaved }) {
   }
 
   async function link(provider) {
-    const input = card(provider).querySelector('.prov-key');
+    const c = card(provider);
+    const input = c.querySelector('.prov-key');
     const key = input.value.trim();
-    if (!key) return say('Paste an API key first', true);
-    say('Verifying key…');
+    let args = [key];
+    if (provider === 'compat') {
+      const preset = c.querySelector('.prov-preset').value;
+      const url = c.querySelector('.prov-url').value.trim();
+      if (!url) return say('Enter the server address first', true);
+      if (!key && COMPAT_PRESETS[preset].needsKey) return say(`${COMPAT_PRESETS[preset].label} needs an API key`, true);
+      args = [key, url, preset];
+      say(`Connecting to ${url}…`);
+    } else {
+      if (!key) return say('Paste an API key first', true);
+      say('Verifying key…');
+    }
     try {
-      const res = await api.settings.link(provider, key);
+      const res = await api.settings.link(provider, ...args);
       input.value = '';
       view = res.settings;
       renderView();
-      say(`${LABEL[provider]} linked · ${res.models.length} models available`);
+      const name = provider === 'compat' ? COMPAT_PRESETS[view.compatPreset].label.toUpperCase() : LABEL[provider];
+      say(`${name} linked · ${res.models.length} models available`);
       onSaved?.(view);
     } catch (err) {
       say(`Link failed: ${err.message}`, true);
@@ -107,7 +137,7 @@ export function createSettings(api, { onSaved }) {
   async function save() {
     const provider = field('provider').value;
     const models = {};
-    for (const p of ['anthropic', 'openai']) {
+    for (const p of PROVS) {
       const m = card(p).querySelector('.prov-model').value;
       if (view.linked[p] && m) models[p] = m;
     }
@@ -146,7 +176,8 @@ export function createSettings(api, { onSaved }) {
     else if (action === 'save-settings') save();
     else if (action === 'close-overlay') close();
   });
-  for (const input of $$('.prov-key', overlay)) {
+  card('compat').querySelector('.prov-preset').addEventListener('change', (e) => applyPreset(e.target.value));
+  for (const input of $$('.prov-key, .prov-url', overlay)) {
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') link(input.closest('.prov').dataset.provider);
     });
