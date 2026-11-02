@@ -1,7 +1,9 @@
 // Uplink + settings overlay.
 import { $, $$, esc, setText } from '../lib/dom.js';
+import { COMPAT_PRESETS, OLLAMA_MODELS } from '/shared/presets.js';
 
-const LABEL = { anthropic: 'CLAUDE', openai: 'CHATGPT' };
+const PROVS = ['anthropic', 'openai', 'compat'];
+const LABEL = { anthropic: 'CLAUDE', openai: 'CHATGPT', compat: 'LOCAL MODEL' };
 
 export function createSettings(api, { onSaved }) {
   const overlay = $('#overlay');
@@ -44,8 +46,81 @@ export function createSettings(api, { onSaved }) {
   }
   speechSynthesis.addEventListener('voiceschanged', () => view && fillVoices());
 
+  // Fills the address, key hint and help link for a preset. Custom keeps what was typed.
+  function applyPreset(id) {
+    const c = card('compat');
+    const preset = COMPAT_PRESETS[id] || COMPAT_PRESETS.custom;
+    const url = c.querySelector('.prov-url');
+    if (id !== 'custom') url.value = preset.url;
+    url.placeholder = preset.url || 'http://host:port/v1';
+    c.querySelector('.prov-key').placeholder = preset.needsKey ? 'API key' : 'API key (not needed)';
+    const help = c.querySelector('.prov-help');
+    help.hidden = !preset.help;
+    help.dataset.url = preset.help;
+    setText(help, preset.helpText);
+    c.querySelector('.prov-setup').hidden = id !== 'ollama' || !api.ollama || api.app.platform !== 'win32';
+  }
+
+  // ---- one-click Ollama setup
+  const setupCard = card('compat');
+  const setupBtn = setupCard.querySelector('[data-action="ollama-setup"]');
+  const bar = setupCard.querySelector('.setup-bar');
+  let settingUp = false;
+  setupCard.querySelector('.prov-dl').innerHTML = OLLAMA_MODELS.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join('');
+
+  function showProgress(pct) {
+    bar.classList.toggle('busy', pct == null);
+    bar.firstElementChild.style.transform = pct == null ? '' : `scaleX(${Math.max(0, Math.min(1, pct))})`;
+  }
+  api.ollama?.onProgress(({ text, pct }) => {
+    if (!settingUp) return;
+    say(text);
+    showProgress(pct);
+  });
+
+  async function describeOllama() {
+    if (setupCard.querySelector('.prov-setup').hidden || view.linked.compat) return;
+    try {
+      const s = await api.ollama.status();
+      if (s.running && s.models.length) say(`Ollama is running with ${s.models.length} model(s). Press LINK, or SET UP to download another.`);
+      else if (s.running) say('Ollama is running but has no models. Pick one and press SET UP.');
+      else if (s.installed) say('Ollama is installed but not running. SET UP will start it.');
+      else say('No Ollama yet. Pick a model and press SET UP to install everything (free, runs on this PC).');
+    } catch {
+      // status is a hint only
+    }
+  }
+
+  async function ollamaSetup() {
+    if (settingUp) {
+      api.ollama.cancel();
+      return;
+    }
+    const model = setupCard.querySelector('.prov-dl').value;
+    settingUp = true;
+    setText(setupBtn, 'CANCEL');
+    showProgress(null);
+    say('Checking for Ollama…');
+    try {
+      const res = await api.ollama.setup(model);
+      view = res.settings;
+      renderView();
+      showProgress(1);
+      say(`OLLAMA linked · ${model} ready · ${res.models.length} models available`);
+      onSaved?.(view);
+    } catch (err) {
+      showProgress(0);
+      say(err.name === 'AbortError' ? 'Setup cancelled' : `Setup failed: ${err.message}`, err.name !== 'AbortError');
+    } finally {
+      settingUp = false;
+      setText(setupBtn, 'SET UP');
+    }
+  }
+
   function renderView() {
-    for (const p of ['anthropic', 'openai']) {
+    card('compat').querySelector('.prov-preset').value = view.compatPreset;
+    applyPreset(view.compatPreset);
+    for (const p of PROVS) {
       const c = card(p);
       c.classList.toggle('linked', view.linked[p]);
       c.classList.toggle('active', view.provider === p);
@@ -63,6 +138,7 @@ export function createSettings(api, { onSaved }) {
     view = await api.settings.get();
     renderView();
     say('');
+    describeOllama();
     returnFocus = document.activeElement;
     overlay.hidden = false;
     (overlay.querySelector('.prov:not(.linked) .prov-key') || field('provider')).focus();
@@ -81,16 +157,28 @@ export function createSettings(api, { onSaved }) {
   }
 
   async function link(provider) {
-    const input = card(provider).querySelector('.prov-key');
+    const c = card(provider);
+    const input = c.querySelector('.prov-key');
     const key = input.value.trim();
-    if (!key) return say('Paste an API key first', true);
-    say('Verifying key…');
+    let args = [key];
+    if (provider === 'compat') {
+      const preset = c.querySelector('.prov-preset').value;
+      const url = c.querySelector('.prov-url').value.trim();
+      if (!url) return say('Enter the server address first', true);
+      if (!key && COMPAT_PRESETS[preset].needsKey) return say(`${COMPAT_PRESETS[preset].label} needs an API key`, true);
+      args = [key, url, preset];
+      say(`Connecting to ${url}…`);
+    } else {
+      if (!key) return say('Paste an API key first', true);
+      say('Verifying key…');
+    }
     try {
-      const res = await api.settings.link(provider, key);
+      const res = await api.settings.link(provider, ...args);
       input.value = '';
       view = res.settings;
       renderView();
-      say(`${LABEL[provider]} linked · ${res.models.length} models available`);
+      const name = provider === 'compat' ? COMPAT_PRESETS[view.compatPreset].label.toUpperCase() : LABEL[provider];
+      say(`${name} linked · ${res.models.length} models available`);
       onSaved?.(view);
     } catch (err) {
       say(`Link failed: ${err.message}`, true);
@@ -107,7 +195,7 @@ export function createSettings(api, { onSaved }) {
   async function save() {
     const provider = field('provider').value;
     const models = {};
-    for (const p of ['anthropic', 'openai']) {
+    for (const p of PROVS) {
       const m = card(p).querySelector('.prov-model').value;
       if (view.linked[p] && m) models[p] = m;
     }
@@ -142,11 +230,16 @@ export function createSettings(api, { onSaved }) {
     const action = btn.dataset.action;
     if (action === 'link') link(provider);
     else if (action === 'unlink') unlink(provider);
+    else if (action === 'ollama-setup') ollamaSetup();
     else if (action === 'open') api.app.openExternal(btn.dataset.url).catch((err) => say(err.message, true));
     else if (action === 'save-settings') save();
     else if (action === 'close-overlay') close();
   });
-  for (const input of $$('.prov-key', overlay)) {
+  card('compat').querySelector('.prov-preset').addEventListener('change', (e) => {
+    applyPreset(e.target.value);
+    describeOllama();
+  });
+  for (const input of $$('.prov-key, .prov-url', overlay)) {
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') link(input.closest('.prov').dataset.provider);
     });

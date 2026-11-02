@@ -9,12 +9,14 @@ import { handle, check } from './ipc.js';
 import { createConfig, PROVIDERS } from './config.js';
 import { createTelemetry } from './telemetry.js';
 import { createWeather } from './weather.js';
-import { createChat, providers, toSpeech } from './ai.js';
+import { compatSecret, createChat, providers, toSpeech } from './ai.js';
 import { createWindowsRecognizer, transcribe, synthesize } from './voice.js';
 import { search as youtubeSearch } from './youtube.js';
 import { installAdblock } from './adblock.js';
 import { buildContext } from './context.js';
 import { resolveAsset, mimeFor } from './serve.js';
+import { COMPAT_PRESETS, OLLAMA_MODELS } from '../shared/presets.js';
+import { createOllamaSetup } from './ollama.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.resolve(HERE, '..');
@@ -22,7 +24,7 @@ const SERVE_ROOTS = { shared: path.join(SRC, 'shared'), '': path.join(SRC, 'rend
 const RESOURCES = app.isPackaged ? process.resourcesPath : path.resolve(SRC, '..', 'resources');
 const IS_DEV = !app.isPackaged;
 const ORIGIN = 'app://holodesk';
-const EXTERNAL_HOSTS = new Set(['console.anthropic.com', 'platform.openai.com', 'www.youtube.com', 'youtube.com', 'youtu.be']);
+const EXTERNAL_HOSTS = new Set(['console.anthropic.com', 'platform.openai.com', 'ollama.com', 'lmstudio.ai', 'console.groq.com', 'openrouter.ai', 'www.youtube.com', 'youtube.com', 'youtu.be']);
 
 // Isolated profile for tests (also against the packaged build) and side-by-side runs.
 if (process.env.HOLODESK_USER_DATA) app.setPath('userData', process.env.HOLODESK_USER_DATA);
@@ -126,11 +128,18 @@ function boot() {
     if (patch && 'launchAtLogin' in patch && app.isPackaged) app.setLoginItemSettings({ openAtLogin: view.launchAtLogin, name: 'HOLODESK' });
     return view;
   });
-  handle('settings:link', async (provider, key) => {
+  handle('settings:link', async (provider, key, baseUrl, preset) => {
     check.oneOf(provider, 'provider', PROVIDERS);
-    key = check.str(key, 'API key', 400);
+    let opts;
+    if (provider === 'compat') {
+      // local servers need no key
+      key = compatSecret(check.str(baseUrl, 'server address', 400), typeof key === 'string' ? key.slice(0, 400) : '');
+      opts = { preset: check.oneOf(preset, 'preset', Object.keys(COMPAT_PRESETS)) };
+    } else {
+      key = check.str(key, 'API key', 400);
+    }
     const models = await providers[provider].listModels(key);
-    config.setKey(provider, key, providers[provider].pickDefault(models));
+    config.setKey(provider, key, providers[provider].pickDefault(models), opts);
     return { settings: config.publicView(), models };
   });
   handle('settings:unlink', (provider) => {
@@ -138,6 +147,21 @@ function boot() {
     return config.publicView();
   });
   handle('settings:models', (provider) => providers[check.oneOf(provider, 'provider', PROVIDERS)].listModels(requireKey(provider)));
+
+  const ollama = createOllamaSetup();
+  handle('ollama:status', () => ollama.status());
+  handle('ollama:setup', async (model) => {
+    check.oneOf(model, 'model', OLLAMA_MODELS.map((m) => m.id));
+    await ollama.setup(model, (phase, text, pct) => {
+      if (win && !win.isDestroyed()) win.webContents.send('ollama:progress', { phase, text, pct });
+    });
+    const url = COMPAT_PRESETS.ollama.url;
+    const models = await providers.compat.listModels(compatSecret(url));
+    const id = models.find((m) => m.id === model || m.id === `${model}:latest`)?.id || model;
+    config.setKey('compat', compatSecret(url), id, { preset: 'ollama' });
+    return { settings: config.publicView(), models };
+  });
+  handle('ollama:cancel', () => ollama.cancel());
 
   handle('ai:send', (text) => chat.send(check.str(text, 'message', 8000)));
   handle('ai:cancel', () => chat.cancel());
@@ -187,6 +211,7 @@ function boot() {
     telemetry.stop();
     recognizer.dispose();
     chat.cancel();
+    ollama.cancel();
   });
 }
 

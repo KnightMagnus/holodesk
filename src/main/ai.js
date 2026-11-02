@@ -1,12 +1,17 @@
-// AI uplink: Anthropic (Claude) and OpenAI (ChatGPT) over their HTTP APIs.
+// AI uplink: Anthropic (Claude), OpenAI (ChatGPT), and any OpenAI-compatible
+// server (Ollama, LM Studio, Groq, OpenRouter) over their HTTP APIs.
 // The conversation lives here, not in the renderer, so it can be trimmed and
 // enriched with live telemetry before every request.
-import { getJson, postJson } from './net.js';
+import { getJson, postJson, HttpError } from './net.js';
 
 const ANTHROPIC_VERSION = '2023-06-01';
 const MAX_TURNS = 24;
 const OPENAI_EXCLUDE = /(audio|realtime|transcribe|tts|image|search|embedding|instruct|moderation|codex|-pro\b|deep-research|computer-use|whisper|dall-e|babbage|davinci)/;
 const DATED = /-\d{4}-\d{2}-\d{2}$|-\d{8}$/;
+// Compatible servers list every model they host, including ones that cannot chat.
+const COMPAT_EXCLUDE = /(embed|rerank|whisper|tts|guard|bge-|minilm|orpheus|playai)/i;
+// Plain http is fine on this PC or the LAN; anywhere else a key would travel in clear.
+const LOCAL_HOST = /^(localhost|127\.\d+\.\d+\.\d+|\[::1\]|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|[\w-]+\.local)$/i;
 
 export const PERSONA =
   'You are HOLODESK, the voice of a holographic HUD running on the user\'s Windows PC. ' +
@@ -50,8 +55,79 @@ export const providers = {
       }, { headers: { Authorization: `Bearer ${key}` }, timeout: 90000, signal });
       return (j.choices?.[0]?.message?.content || '').trim();
     }
+  },
+
+  // The stored secret is {url, key} as JSON so the address and an optional key
+  // stay together, encrypted, in the main process.
+  compat: {
+    label: 'Compatible',
+    async listModels(secret) {
+      const { url, key } = parseCompatSecret(secret);
+      let j;
+      try {
+        j = await getJson(`${url}/models`, { headers: authHeader(key), timeout: 8000 });
+      } catch (err) {
+        if (err instanceof HttpError && err.status === 0) {
+          throw new Error(`No server answering at ${url}. Is Ollama (or your server) running?`);
+        }
+        throw err;
+      }
+      const models = filterCompatModels(j.data || []);
+      if (!models.length) throw new Error('That server has no chat models. For Ollama run: ollama pull llama3.2');
+      return models;
+    },
+    // OpenRouter lists hundreds of paid models; a free one is the safer default.
+    pickDefault: (models) => (models.find((m) => m.id.endsWith(':free')) || models[0])?.id ?? null,
+    async chat({ key: secret, model, system, messages, signal }) {
+      const { url, key } = parseCompatSecret(secret);
+      const j = await postJson(`${url}/chat/completions`, {
+        model,
+        max_tokens: 1024,
+        messages: [{ role: 'system', content: system }, ...messages]
+      }, { headers: authHeader(key), timeout: 180000, signal }); // local servers load the model on first use
+      return stripThinking(j.choices?.[0]?.message?.content || '');
+    }
   }
 };
+
+const authHeader = (key) => (key ? { Authorization: `Bearer ${key}` } : {});
+
+/** Validates a base URL like http://localhost:11434/v1 and returns it without a trailing slash. */
+export function normalizeBaseUrl(input) {
+  const raw = String(input || '').trim();
+  let u;
+  try {
+    u = new URL(/^[a-z]+:\/\//i.test(raw) ? raw : `http://${raw}`);
+  } catch {
+    throw new Error('Invalid server address');
+  }
+  if (!['http:', 'https:'].includes(u.protocol) || u.username || u.password || u.search || u.hash) {
+    throw new Error('Invalid server address');
+  }
+  if (u.protocol === 'http:' && !LOCAL_HOST.test(u.hostname)) throw new Error('Use https for servers outside this PC or LAN');
+  return `${u.protocol}//${u.host}${u.pathname.replace(/\/+$/, '')}`;
+}
+
+export function compatSecret(url, key = '') {
+  return JSON.stringify({ url: normalizeBaseUrl(url), key: String(key || '').trim() });
+}
+
+function parseCompatSecret(secret) {
+  const { url, key } = JSON.parse(secret);
+  return { url, key };
+}
+
+export function filterCompatModels(data) {
+  return data
+    .map((m) => m.id)
+    .filter((id) => typeof id === 'string' && !COMPAT_EXCLUDE.test(id))
+    .map((id) => ({ id, name: id }));
+}
+
+/** Reasoning models (qwen3, deepseek-r1) inline their chain of thought; never show or speak it. */
+export function stripThinking(text) {
+  return String(text).replace(/<think>[\s\S]*?(<\/think>|$)/g, '').trim();
+}
 
 export function filterOpenAiModels(data) {
   return data
@@ -79,7 +155,7 @@ export function createChat({ config, buildContext, provs = providers }) {
     async send(text) {
       const provider = config.get('provider');
       const key = provider && config.getKey(provider);
-      if (!key) throw new Error('No uplink. Open settings and link Claude or ChatGPT.');
+      if (!key) throw new Error('No uplink. Open settings and link Claude, ChatGPT or a local model.');
       const model = config.model(provider);
       if (!model) throw new Error('No model selected. Open settings and pick one.');
 
@@ -95,7 +171,7 @@ export function createChat({ config, buildContext, provs = providers }) {
         if (controller === own) controller = null;
       }
       history = [...messages, { role: 'assistant', content: reply || '(no reply)' }].slice(-MAX_TURNS);
-      // Both APIs need the history to start on a user turn.
+      // Every API needs the history to start on a user turn.
       while (history.length && history[0].role !== 'user') history.shift();
       return reply;
     },

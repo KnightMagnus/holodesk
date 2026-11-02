@@ -29,6 +29,16 @@ contextBridge.exposeInMainWorld('holodesk', {
     models: call('settings:models')
   },
   ai: { send: call('ai:send'), cancel: call('ai:cancel'), reset: call('ai:reset') },
+  ollama: {
+    status: call('ollama:status'),
+    setup: call('ollama:setup'),
+    cancel: call('ollama:cancel'),
+    onProgress(cb) {
+      const listener = (_e, p) => cb(p);
+      ipcRenderer.on('ollama:progress', listener);
+      return () => ipcRenderer.removeListener('ollama:progress', listener);
+    }
+  },
   voice: {
     listen: call('voice:listen'),
     cancel: call('voice:cancel'),
