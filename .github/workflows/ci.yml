@@ -70,4 +70,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $setup = (Get-ChildItem dist\HOLODESK-Setup-*.exe).FullName
-          gh release create $env:GITHUB_REF_NAME $setup --title "HOLODESK $env:GITHUB_REF_NAME" --generate-notes
+          # a release drafted on github.com already exists; attach the installer to it
+          gh release view $env:GITHUB_REF_NAME *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:GITHUB_REF_NAME $setup --clobber
+          } else {
+            gh release create $env:GITHUB_REF_NAME $setup --title "HOLODESK $env:GITHUB_REF_NAME" --generate-notes
+          }
